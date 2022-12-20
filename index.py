@@ -76,9 +76,11 @@ if authentication_status:
 
     st.sidebar.write('### ML Prediction')
     prediction=st.sidebar.checkbox("Add Prediction")
+
     if prediction:
         predictionperiod = range(1, 366)
         prediction_period = st.sidebar.select_slider("Select Prediction Period", options=predictionperiod, value=30)
+        components = st.sidebar.checkbox("Display Prediction Components")
 
     #DIVIDE GRAPHS AND PRICE TABLE INTO COLUMNS
     c3, c4 = st.columns((3, 1))
@@ -115,6 +117,8 @@ if authentication_status:
                     future = model.make_future_dataframe(periods=prediction_period)
                     predict = model.predict(future)
                     st.pyplot(model.plot(predict))
+                    if components:
+                        st.pyplot(model.plot_components(predict))
                 else:
                     pass
 
@@ -130,7 +134,10 @@ if authentication_status:
                     model.fit(df)
                     future = model.make_future_dataframe(periods=prediction_period)
                     predict = model.predict(future)
+                    st.pyplot(model.plot_components(predict))
                     st.pyplot(model.plot(predict))
+                    if components:
+                        st.pyplot(model.plot_components(predict))
                 else:
                     pass
             elif price_volume == "Both":
@@ -151,17 +158,30 @@ if authentication_status:
         st.header("Price Table")
         st.write("<h5>This table displays the selected end date closing values of the securities</h5>", unsafe_allow_html=True)
         closes=yf.Tickers(price_table).history(period='1d', start=start, end=end)
+        global df1
+        df1=closes['Close'].iloc[-1]
         st.dataframe(closes['Close'].iloc[-1], use_container_width=1)
 
+
     #PREDICTION USING ML ALGORITHMS
+    c5, c6 = st.columns((3, 1))
+    with c5:
+        def download_csv(df):
+            csv=df.to_csv()
+            b64=base64.b64encode(csv.encode()).decode()
+            href=f'<a href="data:file/csv;base64,{b64}">Download Chart into CSV</a>'
+            return href
 
-    def download_csv(df):
-        csv=df.to_csv()
-        b64=base64.b64encode(csv.encode()).decode()
-        href=f'<a href="data:file/csv;base64,{b64}">download CSV</a>'
-        return href
+        st.markdown(download_csv(df), unsafe_allow_html=True)
 
-    st.markdown(download_csv(df), unsafe_allow_html=True)
+    with c6:
+        def download_csv1(df1):
+            csv1 = df1.to_csv()
+            datatable = base64.b64encode(csv1.encode()).decode()
+            href1 = f'<a href="data:file/csv;base64,{datatable}">Download Table into CSV</a>'
+            return href1
+
+        st.markdown(download_csv1(df1), unsafe_allow_html=True)
 
 
 
