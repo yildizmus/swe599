@@ -75,6 +75,9 @@ if authentication_status:
 
     st.sidebar.write('### ML Prediction')
     prediction=st.sidebar.checkbox("Add Prediction")
+    if prediction:
+        predictionperiod = range(1, 366)
+        prediction_period = st.sidebar.select_slider("Select Prediction Period", options=predictionperiod, value=30)
 
     #DIVIDE GRAPHS AND PRICE TABLE INTO COLUMNS
     c3, c4 = st.columns((3, 1))
@@ -107,7 +110,7 @@ if authentication_status:
                     df.columns = ['ds', 'y']
                     model = Prophet()
                     model.fit(df)
-                    future = model.make_future_dataframe(periods=90)
+                    future = model.make_future_dataframe(periods=prediction_period)
                     predict = model.predict(future)
                     st.pyplot(model.plot(predict))
                 else:
@@ -123,7 +126,7 @@ if authentication_status:
                     df.columns = ['ds', 'y']
                     model = Prophet()
                     model.fit(df)
-                    future = model.make_future_dataframe(periods=90)
+                    future = model.make_future_dataframe(periods=prediction_period)
                     predict = model.predict(future)
                     st.pyplot(model.plot(predict))
                 else:
