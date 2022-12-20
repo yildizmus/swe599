@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import prophet
 from prophet import Prophet
 import seaborn as sns
+import base64
 
 import pickle
 from pathlib import Path
@@ -102,6 +103,7 @@ if authentication_status:
         def graph(symbol, start, end):
             if price_volume=="Price":
                 data = yf.Ticker(symbol)
+                global df
                 df = data.history(period='1d', start=start, end=end)
                 st.line_chart(df.Close)
                 if prediction:
@@ -152,6 +154,15 @@ if authentication_status:
         st.dataframe(closes['Close'].iloc[-1], use_container_width=1)
 
     #PREDICTION USING ML ALGORITHMS
+
+    def download_csv(df):
+        csv=df.to_csv()
+        b64=base64.b64encode(csv.encode()).decode()
+        href=f'<a href="data:file/csv;base64,{b64}">download CSV</a>'
+        return href
+
+    st.markdown(download_csv(df), unsafe_allow_html=True)
+
 
 
 
