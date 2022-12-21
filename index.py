@@ -7,6 +7,11 @@ from datetime import datetime, date, time, timedelta
 import matplotlib.pyplot as plt
 import prophet
 from prophet import Prophet
+from prophet.diagnostics import cross_validation
+from prophet.diagnostics import performance_metrics
+from prophet.plot import plot_cross_validation_metric
+
+
 import seaborn as sns
 import base64
 import altair
@@ -60,11 +65,12 @@ if authentication_status:
     #SIDEBAR
     authenticator.logout("Logout", "sidebar")
     st.sidebar.title("Filters")
-    security=st.sidebar.radio("Select Security", ["Indicies", "Stocks"])
+    st.sidebar.write('### Data Set')
+    price_volume = st.sidebar.radio("Select Price-Volume-Both",["Price", "Volume", "Both"])
 
-    st.sidebar.write('### Period Selection')
+    st.sidebar.write('### Period')
     sliderperiod=range(1,366)
-    slider=st.sidebar.select_slider("Select Time Period", options=sliderperiod, value=30)
+    slider=st.sidebar.select_slider("Filter Time Period", options=sliderperiod, value=180)
 
     today=datetime.today()
     period=timedelta(days=slider)
@@ -72,15 +78,8 @@ if authentication_status:
     start=st.sidebar.date_input("Start Date", value=today-period)
     end=st.sidebar.date_input("End Date", value=today)
 
-    st.sidebar.write('### Select Data Set')
-    price_volume = st.sidebar.radio("Select Data Set", ["Price", "Volume", "Both"])
-
-    st.sidebar.write('### ML Prediction')
-    prediction=st.sidebar.checkbox("Add Prediction")
-    if prediction:
-        predictionperiod = range(1, 366)
-        prediction_period = st.sidebar.select_slider("Select Prediction Period", options=predictionperiod, value=30)
-        components = st.sidebar.checkbox("Display Prediction Components")
+    st.sidebar.write('### Securities for Chart')
+    security = st.sidebar.radio("Filter Security Group for Chart", ["Indicies", "Stocks"])
 
     #DIVIDE GRAPHS AND PRICE TABLE INTO COLUMNS
     c3, c4 = st.columns((3, 1))
@@ -91,17 +90,24 @@ if authentication_status:
         #Charts
         if security=="Indicies":
             indicies=["XU030.IS", "XU100.IS", "XBANK.IS","XUSIN.IS"]
-            selectindex=st.sidebar.selectbox("Index Name", indicies)
+            selectindex=st.sidebar.selectbox("Filter Index", indicies)
             symbol=selectindex
-            st.sidebar.write('### Select Securities')
-            price_table = st.sidebar.multiselect("Select Securities", indicies, default=["XU030.IS", "XU100.IS", "XBANK.IS","XUSIN.IS"])
+            st.sidebar.write('### Securities for Table')
+            price_table = st.sidebar.multiselect("Select Indicies for Table", indicies, default=["XU030.IS", "XU100.IS", "XBANK.IS","XUSIN.IS"])
         else:
             stocks=["AKBNK.IS","AKSEN.IS","ARCLK.IS","ASELS.IS","BIMAS.IS","EKGYO.IS","EREGL.IS","FROTO.IS","GARAN.IS","GUBRF.IS","HEKTS.IS","ISCTR.IS","KCHOL.IS","KOZAA.IS","KOZAL.IS","KRDMD.IS","PETKM.IS","PGSUS.IS","SAHOL.IS","SASA.IS","SISE.IS","TAVHL.IS","TCELL.IS","THYAO.IS","TKFEN.IS","TOASO.IS","TTKOM.IS","TUPRS.IS","VESTL.IS","YKBNK.IS"]
-            selectstock = st.sidebar.selectbox("Stocks Name", stocks)
+            selectstock = st.sidebar.selectbox("Filter Stock", stocks)
             symbol=selectstock
-            st.sidebar.write('### Select Securities')
-            price_table = st.sidebar.multiselect("Select Securities", stocks, default=["AKBNK.IS","AKSEN.IS","ARCLK.IS","ASELS.IS","BIMAS.IS","EKGYO.IS","EREGL.IS","FROTO.IS","GARAN.IS"])
+            st.sidebar.write('### Securities for Table')
+            price_table = st.sidebar.multiselect("Select Stocks for Table", stocks, default=["AKBNK.IS","AKSEN.IS","ARCLK.IS","ASELS.IS","BIMAS.IS","EKGYO.IS","EREGL.IS","FROTO.IS","GARAN.IS"])
 
+        st.sidebar.write('### ML Prediction')
+        prediction = st.sidebar.checkbox("Add Prediction")
+        if prediction:
+            predictionperiod = range(1, 366)
+            prediction_period = st.sidebar.select_slider("Filter Prediction Period", options=predictionperiod, value=30)
+            components = st.sidebar.checkbox("Display Prediction Components")
+            crossValidation = st.sidebar.checkbox("Cross Validation")
         def graph(symbol, start, end):
             if price_volume=="Price":
                 data = yf.Ticker(symbol)
@@ -113,6 +119,7 @@ if authentication_status:
                     df = df.reset_index()
                     df=df[['Date', 'Close']]
                     df.columns = ['ds', 'y']
+                    global model
                     model = Prophet()
                     model.fit(df)
                     future = model.make_future_dataframe(periods=prediction_period)
@@ -120,6 +127,31 @@ if authentication_status:
                     st.pyplot(model.plot(predict))
                     if components:
                         st.pyplot(model.plot_components(predict))
+                    # CROSS VALIDATION
+                    if crossValidation:
+                        st.sidebar.write("Select a cross validation metric")
+                        metrics=st.sidebar.radio("Metric", ["rmse", "mse", "mape", "mdape"])
+
+                        st.sidebar.write("Select a parameters")
+                        initial_range=range(1, 1441)
+                        initial_period=st.sidebar.select_slider("Initial Period", options=initial_range, value=120)
+                        cv_range=range(1, 1441)
+                        cv_period=st.sidebar.select_slider("CV period", options=cv_range, value=30)
+                        hor_range = range(1, 1441)
+                        hor_period = st.sidebar.select_slider("Horizon period", options=hor_range, value=60)
+                        def cv_graph(model, initial, period, horizon, metric):
+                            initial=str(initial)+" days"
+                            period = str(period) + " days"
+                            horizon = str(horizon) + " days"
+                            cv = cross_validation(model, initial=initial, period=period, horizon=horizon)
+                            crossvalidation_graph= plot_cross_validation_metric(cv, metric=metric)
+                            st.write(crossvalidation_graph)
+
+                        cv_graph(model, initial_period, cv_period, hor_period, metrics )
+
+
+                        #df_pm=performance_metrics(cv)
+
                 else:
                     pass
 
