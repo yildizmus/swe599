@@ -63,7 +63,7 @@ if authentication_status:
         predictionperiod = range(1, 366)
         prediction_period = st.sidebar.select_slider("Filter Prediction Period", options=predictionperiod, value=30)
         components = st.sidebar.checkbox("Display Prediction Components")
-        crossValidation = st.sidebar.checkbox("Cross Validation")
+
     def graph(symbol, start, end):
         data = yf.Ticker(symbol)
         global df
@@ -82,30 +82,6 @@ if authentication_status:
             st.pyplot(model.plot(predict))
             if components:
                 st.pyplot(model.plot_components(predict))
-            # CROSS VALIDATION
-            if crossValidation:
-                st.sidebar.write("Select a cross validation metric")
-                metrics=st.sidebar.radio("Metric", ["rmse", "mse", "mape", "mdape"])
-
-                st.sidebar.write("Select a parameters")
-                initial_range=range(1, 1441)
-                initial_period=st.sidebar.select_slider("Initial Period", options=initial_range, value=120)
-                cv_range=range(1, 1441)
-                cv_period=st.sidebar.select_slider("CV period", options=cv_range, value=30)
-                hor_range = range(1, 1441)
-                hor_period = st.sidebar.select_slider("Horizon period", options=hor_range, value=60)
-                def cv_graph(model, initial, period, horizon, metric):
-                    initial=str(initial)+" days"
-                    period = str(period) + " days"
-                    horizon = str(horizon) + " days"
-                    cv = cross_validation(model, initial=initial, period=period, horizon=horizon)
-                    crossvalidation_graph= plot_cross_validation_metric(cv, metric=metric)
-                    st.write(crossvalidation_graph)
-
-                cv_graph(model, initial_period, cv_period, hor_period, metrics )
-
-            else:
-                pass
 
     graph(symbol, start, end)
 
