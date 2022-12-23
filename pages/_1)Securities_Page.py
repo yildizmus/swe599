@@ -5,31 +5,28 @@ from PIL import Image
 import datetime
 from datetime import datetime, date, time, timedelta
 import matplotlib.pyplot as plt
+import matplotlib
 import prophet
 from prophet import Prophet
 from prophet.diagnostics import cross_validation
 from prophet.diagnostics import performance_metrics
 from prophet.plot import plot_cross_validation_metric
-
-
 import seaborn as sns
 import base64
 import altair
-
 import pickle
 from pathlib import Path
-
 import streamlit_authenticator as stauth
+
 
 # WİDE PAGE LAYOUT
 st.set_page_config(layout="wide")
-
 
 #USER AUTHENTICATION
 
 names = ["root admin", "Mustafa Yıldız"]
 usernames = ["radmin", "myildiz"]
-file_path = Path(__file__).parent / "hashed_pw.pk1"
+file_path = Path(__file__).parent.parent / "hashed_pw.pk1"
 with file_path.open("rb") as file:
     hashed_passwords = pickle.load(file)
 authenticator = stauth.Authenticate(names,usernames,hashed_passwords, "index", "index")
